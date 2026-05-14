@@ -1,38 +1,43 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 
+import { API_URL } from "../config";
+
 const CartContext = createContext();
 
 export const useCart = () => useContext(CartContext);
 
 export const CartProvider = ({ children }) => {
   const [cartItems, setCartItems] = useState([]);
-  const clearCart = () => {
-  setCartItems([]);
-};
 
-  // 🔥 Load cart from localStorage (optional but IMPORTANT)
+  // ✅ LOAD CART
   useEffect(() => {
     const savedCart = localStorage.getItem("cart");
 
-if (savedCart) {
-  const parsed = JSON.parse(savedCart);
+    if (savedCart) {
+      const parsed = JSON.parse(savedCart);
 
-  // ✅ migrate old cart items
-  const fixedCart = parsed.map((item) => ({
-    ...item,
-    productId: item.productId || item._id,
-  }));
+      // ✅ migrate old cart items
+      const fixedCart = parsed.map((item) => ({
+        ...item,
+        productId: item.productId || item._id,
+      }));
 
-  setCartItems(fixedCart);
-}
+      setCartItems(fixedCart);
+    }
   }, []);
 
-  // 🔥 Save cart to localStorage
+  // ✅ SAVE CART
   useEffect(() => {
     localStorage.setItem("cart", JSON.stringify(cartItems));
   }, [cartItems]);
 
-  // ✅ SAFE STOCK FUNCTION (NO CRASH EVER)
+  // ✅ CLEAR CART
+  const clearCart = () => {
+    setCartItems([]);
+    localStorage.removeItem("cart");
+  };
+
+  // ✅ SAFE STOCK CHECK
   const getAvailableStock = (product, size) => {
     if (!product || !size) return 0;
     if (!product.stock) return 0;
@@ -40,31 +45,88 @@ if (savedCart) {
     return product.stock?.[size] ?? 0;
   };
 
+  // ✅ REFRESH CART STOCK FROM SERVER
+  const refreshCartStock = async () => {
+    try {
+      const updatedCart = await Promise.all(
+        cartItems.map(async (item) => {
+          try {
+            const res = await fetch(`${API_URL}/products/${item.productId}`);
+
+            if (!res.ok) return item;
+
+            const latestProduct = await res.json();
+
+            const latestStock = latestProduct.stock?.[item.selectedSize] ?? 0;
+
+            // ❌ REMOVE ITEM IF SOLD OUT
+            if (latestStock <= 0) {
+              return null;
+            }
+
+            // ✅ ADJUST QUANTITY
+            return {
+              ...item,
+              stock: latestProduct.stock,
+              quantity: Math.min(item.quantity, latestStock),
+            };
+          } catch {
+            return item;
+          }
+        }),
+      );
+
+      const filteredCart = updatedCart.filter(Boolean);
+
+      setCartItems(filteredCart);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // ✅ AUTO REFRESH EVERY 5 SECONDS
+  useEffect(() => {
+    if (cartItems.length === 0) return;
+
+    refreshCartStock();
+
+    const interval = setInterval(() => {
+      refreshCartStock();
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [cartItems.length]);
+
   // 🛒 ADD TO CART
   const addToCart = (product, selectedSize) => {
     if (!product || !selectedSize) return;
 
     const size = selectedSize.toUpperCase();
+
     const stock = getAvailableStock(product, size);
 
     const cartId = `${product._id}-${size}`;
 
-    const existingItem = cartItems.find(
-      (item) => item.cartId === cartId
-    );
+    const existingItem = cartItems.find((item) => item.cartId === cartId);
 
     const existingQty = existingItem ? existingItem.quantity : 0;
 
-    // 🚫 prevent over buying
-    if (existingQty + 1 > stock) return;
+    // ❌ PREVENT OVERBUYING
+    if (existingQty + 1 > stock) {
+      alert(`Only ${stock} left in stock`);
+      return;
+    }
 
     if (existingItem) {
       setCartItems((prev) =>
         prev.map((item) =>
           item.cartId === cartId
-            ? { ...item, quantity: item.quantity + 1 }
-            : item
-        )
+            ? {
+                ...item,
+                quantity: item.quantity + 1,
+              }
+            : item,
+        ),
       );
     } else {
       setCartItems((prev) => [
@@ -85,9 +147,7 @@ if (savedCart) {
 
   // ❌ REMOVE ITEM
   const removeFromCart = (cartId) => {
-    setCartItems((prev) =>
-      prev.filter((item) => item.cartId !== cartId)
-    );
+    setCartItems((prev) => prev.filter((item) => item.cartId !== cartId));
   };
 
   // 🔁 UPDATE QUANTITY
@@ -96,38 +156,39 @@ if (savedCart) {
       prev.map((item) => {
         if (item.cartId !== cartId) return item;
 
-        const stock = getAvailableStock(
-          item,
-          item.selectedSize
-        );
+        const stock = getAvailableStock(item, item.selectedSize);
 
         const quantity = Math.max(1, Math.min(qty, stock));
 
-        return { ...item, quantity };
-      })
+        return {
+          ...item,
+          quantity,
+        };
+      }),
     );
   };
 
-  // 💰 TOTAL PRICE
+  // 💰 TOTAL
   const getTotalPrice = () => {
     return cartItems.reduce(
       (total, item) => total + item.price * item.quantity,
-      0
+      0,
     );
   };
 
   return (
     <CartContext.Provider
-  value={{
-    cartItems,
-    addToCart,
-    removeFromCart,
-    updateQuantity,
-    getTotalPrice,
-    getAvailableStock,
-    clearCart, // ✅ ADD THIS
-  }}
->
+      value={{
+        cartItems,
+        addToCart,
+        removeFromCart,
+        updateQuantity,
+        getTotalPrice,
+        getAvailableStock,
+        clearCart,
+        refreshCartStock,
+      }}
+    >
       {children}
     </CartContext.Provider>
   );
