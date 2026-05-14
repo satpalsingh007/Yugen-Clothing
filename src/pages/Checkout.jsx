@@ -23,7 +23,7 @@ const Checkout = () => {
     // ✅ CHECK LATEST STOCK BEFORE PAYMENT
     for (const item of cartItems) {
       const stockRes = await fetch(
-        `${API_URL}/products/${item._id}`
+        `${API_URL}/products/${item.productId}`
       );
 
       const latestProduct = await stockRes.json();

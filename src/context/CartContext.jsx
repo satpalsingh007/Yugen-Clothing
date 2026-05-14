@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { API_URL } from "../config";
 
 const CartContext = createContext();
 
@@ -14,46 +13,24 @@ export const CartProvider = ({ children }) => {
   // 🔥 Load cart from localStorage (optional but IMPORTANT)
   useEffect(() => {
     const savedCart = localStorage.getItem("cart");
-    if (savedCart) {
-      setCartItems(JSON.parse(savedCart));
-    }
+
+if (savedCart) {
+  const parsed = JSON.parse(savedCart);
+
+  // ✅ migrate old cart items
+  const fixedCart = parsed.map((item) => ({
+    ...item,
+    productId: item.productId || item._id,
+  }));
+
+  setCartItems(fixedCart);
+}
   }, []);
-  useEffect(() => {
-  refreshCartStock();
-}, []);
 
   // 🔥 Save cart to localStorage
   useEffect(() => {
     localStorage.setItem("cart", JSON.stringify(cartItems));
   }, [cartItems]);
-  // ✅ REFRESH STOCK FUNCTION (CALL BEFORE CHECKOUT)
-  const refreshCartStock = async () => {
-  const updatedCart = [];
-
-  for (const item of cartItems) {
-    try {
-      const res = await fetch(
-        `${API_URL}/products/${item._id}`
-      );
-
-      const latest = await res.json();
-
-      const latestStock =
-        latest.stock?.[item.selectedSize] || 0;
-
-      if (latestStock <= 0) continue;
-
-      updatedCart.push({
-        ...item,
-        quantity: Math.min(item.quantity, latestStock),
-      });
-    } catch (err) {
-      console.error(err);
-    }
-  }
-
-  setCartItems(updatedCart);
-};
 
   // ✅ SAFE STOCK FUNCTION (NO CRASH EVER)
   const getAvailableStock = (product, size) => {
