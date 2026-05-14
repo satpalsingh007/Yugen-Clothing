@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useCart } from "../context/CartContext";
-import "../style/Checkout.css";
+import "../style/checkout.css";
 import { API_URL } from "../config";
 
 const Checkout = () => {
