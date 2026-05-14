@@ -106,12 +106,20 @@ const Cart = () => {
 
                     <input
                       type="number"
-                      value={Math.min(item.quantity, availableStock)}
+                      value={item.quantity}
                       min="1"
                       max={availableStock}
-                      onChange={(e) =>
-                        updateQuantity(item.cartId, Number(e.target.value))
-                      }
+                      onChange={(e) => {
+                        const value = e.target.value;
+
+                        // allow empty while editing
+                        if (value === "") {
+                          updateQuantity(item.cartId, "");
+                          return;
+                        }
+
+                        updateQuantity(item.cartId, Number(value));
+                      }}
                       style={{
                         width: "70px",
                         marginLeft: "10px",

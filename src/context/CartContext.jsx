@@ -112,7 +112,7 @@ export const CartProvider = ({ children }) => {
     const existingQty = existingItem ? existingItem.quantity : 0;
 
     // ❌ PREVENT OVERBUYING
-    if (existingQty + 1 > stock) {
+    if (existingQty >= stock) {
       alert(`Only ${stock} left in stock`);
       return;
     }
@@ -158,9 +158,17 @@ export const CartProvider = ({ children }) => {
       prev.map((item) => {
         if (item.cartId !== cartId) return item;
 
-        const stock = getAvailableStock(item, item.selectedSize);
+        const stock = item.latestStock ?? 0;
 
-        const quantity = Math.max(1, Math.min(qty, stock));
+        // allow temporary empty input
+        if (qty === "") {
+          return {
+            ...item,
+            quantity: "",
+          };
+        }
+
+        const quantity = Math.max(1, Math.min(Number(qty), stock));
 
         return {
           ...item,
