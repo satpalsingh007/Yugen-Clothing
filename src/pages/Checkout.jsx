@@ -23,7 +23,7 @@ const Checkout = () => {
     // ✅ CHECK LATEST STOCK BEFORE PAYMENT
     for (const item of cartItems) {
       const stockRes = await fetch(
-        `${API_URL}/products/${item.productId}`
+        `${API_URL}/products/${item._id}`
       );
 
       const latestProduct = await stockRes.json();
@@ -126,59 +126,39 @@ const Checkout = () => {
 
   return (
     <div className="checkout-page">
-      <div className="checkout-card">
-        <h2 className="checkout-title">Checkout</h2>
+  <div className="checkout-card">
+    <h2 className="checkout-title">Checkout</h2>
 
-        {/* FORM */}
-        <div className="checkout-form">
-          <input
-            name="name"
-            placeholder="Full Name"
-            onChange={handleChange}
-            required
-          />
-          <input
-            name="phone"
-            placeholder="Phone Number"
-            onChange={handleChange}
-            required
-          />
-          <input
-            name="address"
-            placeholder="Address"
-            onChange={handleChange}
-            required
-          />
-          <input
-            name="pincode"
-            placeholder="Pincode"
-            onChange={handleChange}
-            required
-          />
+    {/* FORM */}
+    <div className="checkout-form">
+      <input name="name" placeholder="Full Name" onChange={handleChange} required />
+      <input name="phone" placeholder="Phone Number" onChange={handleChange} required />
+      <input name="address" placeholder="Address" onChange={handleChange} required />
+      <input name="pincode" placeholder="Pincode" onChange={handleChange} required />
+    </div>
+
+    {/* SUMMARY */}
+    <div className="checkout-summary">
+      <h3>Order Summary</h3>
+
+      {cartItems.map((item) => (
+        <div key={item.cartId} className="checkout-item">
+          <span>{item.name} ({item.selectedSize})</span>
+          <span>x {item.quantity}</span>
         </div>
+      ))}
 
-        {/* SUMMARY */}
-        <div className="checkout-summary">
-          <h3>Order Summary</h3>
-
-          {cartItems.map((item) => (
-            <div key={item.cartId} className="checkout-item">
-              <span>
-                {item.name} ({item.selectedSize})
-              </span>
-              <span>x {item.quantity}</span>
-            </div>
-          ))}
-
-          <div className="checkout-total">Total: ₹{getTotalPrice()}</div>
-        </div>
-
-        {/* BUTTON */}
-        <button className="checkout-btn" onClick={loadRazorpay}>
-          Pay Now
-        </button>
+      <div className="checkout-total">
+        Total: ₹{getTotalPrice()}
       </div>
     </div>
+
+    {/* BUTTON */}
+    <button className="checkout-btn" onClick={loadRazorpay}>
+      Pay Now
+    </button>
+  </div>
+</div>
   );
 };
 

@@ -20,7 +20,7 @@ export const CartProvider = ({ children }) => {
       // ✅ migrate old cart items
       const fixedCart = parsed.map((item) => ({
         ...item,
-        productId: item.productId || item._id,
+        productId:item._id || item.productId,
       }));
 
       setCartItems(fixedCart);
