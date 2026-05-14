@@ -1,4 +1,6 @@
+import React from "react";
 import React, { createContext, useContext, useEffect, useState } from "react";
+import { API_URL } from "../config";
 
 const CartContext = createContext();
 
@@ -7,30 +9,52 @@ export const useCart = () => useContext(CartContext);
 export const CartProvider = ({ children }) => {
   const [cartItems, setCartItems] = useState([]);
   const clearCart = () => {
-    setCartItems([]);
-  };
+  setCartItems([]);
+};
 
   // 🔥 Load cart from localStorage (optional but IMPORTANT)
   useEffect(() => {
     const savedCart = localStorage.getItem("cart");
-
     if (savedCart) {
-      const parsed = JSON.parse(savedCart);
-
-      // ✅ migrate old cart items
-      const fixedCart = parsed.map((item) => ({
-        ...item,
-        productId:item._id || item.productId,
-      }));
-
-      setCartItems(fixedCart);
+      setCartItems(JSON.parse(savedCart));
     }
   }, []);
+  useEffect(() => {
+  refreshCartStock();
+}, []);
 
   // 🔥 Save cart to localStorage
   useEffect(() => {
     localStorage.setItem("cart", JSON.stringify(cartItems));
   }, [cartItems]);
+  // ✅ REFRESH STOCK FUNCTION (CALL BEFORE CHECKOUT)
+  const refreshCartStock = async () => {
+  const updatedCart = [];
+
+  for (const item of cartItems) {
+    try {
+      const res = await fetch(
+        `${API_URL}/products/${item._id}`
+      );
+
+      const latest = await res.json();
+
+      const latestStock =
+        latest.stock?.[item.selectedSize] || 0;
+
+      if (latestStock <= 0) continue;
+
+      updatedCart.push({
+        ...item,
+        quantity: Math.min(item.quantity, latestStock),
+      });
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  setCartItems(updatedCart);
+};
 
   // ✅ SAFE STOCK FUNCTION (NO CRASH EVER)
   const getAvailableStock = (product, size) => {
@@ -49,7 +73,9 @@ export const CartProvider = ({ children }) => {
 
     const cartId = `${product._id}-${size}`;
 
-    const existingItem = cartItems.find((item) => item.cartId === cartId);
+    const existingItem = cartItems.find(
+      (item) => item.cartId === cartId
+    );
 
     const existingQty = existingItem ? existingItem.quantity : 0;
 
@@ -61,8 +87,8 @@ export const CartProvider = ({ children }) => {
         prev.map((item) =>
           item.cartId === cartId
             ? { ...item, quantity: item.quantity + 1 }
-            : item,
-        ),
+            : item
+        )
       );
     } else {
       setCartItems((prev) => [
@@ -83,7 +109,9 @@ export const CartProvider = ({ children }) => {
 
   // ❌ REMOVE ITEM
   const removeFromCart = (cartId) => {
-    setCartItems((prev) => prev.filter((item) => item.cartId !== cartId));
+    setCartItems((prev) =>
+      prev.filter((item) => item.cartId !== cartId)
+    );
   };
 
   // 🔁 UPDATE QUANTITY
@@ -92,12 +120,15 @@ export const CartProvider = ({ children }) => {
       prev.map((item) => {
         if (item.cartId !== cartId) return item;
 
-        const stock = getAvailableStock(item, item.selectedSize);
+        const stock = getAvailableStock(
+          item,
+          item.selectedSize
+        );
 
         const quantity = Math.max(1, Math.min(qty, stock));
 
         return { ...item, quantity };
-      }),
+      })
     );
   };
 
@@ -105,22 +136,22 @@ export const CartProvider = ({ children }) => {
   const getTotalPrice = () => {
     return cartItems.reduce(
       (total, item) => total + item.price * item.quantity,
-      0,
+      0
     );
   };
 
   return (
     <CartContext.Provider
-      value={{
-        cartItems,
-        addToCart,
-        removeFromCart,
-        updateQuantity,
-        getTotalPrice,
-        getAvailableStock,
-        clearCart, // ✅ ADD THIS
-      }}
-    >
+  value={{
+    cartItems,
+    addToCart,
+    removeFromCart,
+    updateQuantity,
+    getTotalPrice,
+    getAvailableStock,
+    clearCart, // ✅ ADD THIS
+  }}
+>
       {children}
     </CartContext.Provider>
   );
