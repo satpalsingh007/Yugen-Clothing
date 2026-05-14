@@ -124,6 +124,7 @@ export const CartProvider = ({ children }) => {
             ? {
                 ...item,
                 quantity: item.quantity + 1,
+                latestStock: stock,
               }
             : item,
         ),
@@ -137,6 +138,7 @@ export const CartProvider = ({ children }) => {
           price: product.price,
           images: product.images || [],
           stock: product.stock || {},
+          latestStock: stock,
           selectedSize: size,
           cartId,
           quantity: 1,
