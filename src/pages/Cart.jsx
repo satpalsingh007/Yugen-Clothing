@@ -121,8 +121,7 @@ const Cart = () => {
                         updateQuantity(item.cartId, Number(value));
                       }}
                       onBlur={() => {
-                        // reset only AFTER user finishes editing
-                        if (item.quantity === "" || item.quantity < 1) {
+                        if (item.quantity === "" || Number(item.quantity) < 1) {
                           updateQuantity(item.cartId, 1);
                         }
                       }}

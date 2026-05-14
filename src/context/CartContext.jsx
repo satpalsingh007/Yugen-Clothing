@@ -92,18 +92,6 @@ export const CartProvider = ({ children }) => {
     }
   };
 
-  // ✅ AUTO REFRESH EVERY 5 SECONDS
-  useEffect(() => {
-    if (cartItems.length === 0) return;
-
-    refreshCartStock();
-
-    const interval = setInterval(() => {
-      refreshCartStock();
-    }, 5000);
-
-    return () => clearInterval(interval);
-  }, [cartItems.length]);
 
   // 🛒 ADD TO CART
   const addToCart = (product, selectedSize) => {
