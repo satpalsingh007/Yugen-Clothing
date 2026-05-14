@@ -68,7 +68,7 @@ export const CartProvider = ({ children }) => {
             return {
               ...item,
               stock: latestProduct.stock,
-              quantity: Math.min(item.quantity, latestStock),
+              quantity: item.quantity === "" ? "": Math.min(item.quantity, latestStock),
             };
           } catch {
             return item;
