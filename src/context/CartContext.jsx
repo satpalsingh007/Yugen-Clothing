@@ -68,7 +68,15 @@ export const CartProvider = ({ children }) => {
             return {
               ...item,
               stock: latestProduct.stock,
-              quantity: item.quantity === "" ? "": Math.min(item.quantity, latestStock),
+              latestStock,
+
+              // ✅ DO NOT touch quantity while typing
+              quantity:
+                item.quantity === ""
+                  ? ""
+                  : item.quantity > latestStock
+                    ? latestStock
+                    : item.quantity,
             };
           } catch {
             return item;
@@ -172,7 +180,7 @@ export const CartProvider = ({ children }) => {
 
         // invalid number
         if (isNaN(quantity)) {
-          quantity = 1;
+          return item;
         }
 
         // prevent below 1

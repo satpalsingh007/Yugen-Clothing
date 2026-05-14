@@ -107,12 +107,21 @@ const Cart = () => {
                     <input
                       type="number"
                       value={item.quantity}
+                      min="1"
                       max={availableStock}
                       onChange={(e) => {
-                        updateQuantity(item.cartId, e.target.value);
+                        const value = e.target.value;
+
+                        // allow empty while typing
+                        if (value === "") {
+                          updateQuantity(item.cartId, "");
+                          return;
+                        }
+
+                        updateQuantity(item.cartId, Number(value));
                       }}
                       onBlur={() => {
-                        // if empty after editing, reset to 1
+                        // reset only AFTER user finishes editing
                         if (item.quantity === "" || item.quantity < 1) {
                           updateQuantity(item.cartId, 1);
                         }
