@@ -160,7 +160,7 @@ export const CartProvider = ({ children }) => {
 
         const stock = item.latestStock ?? 0;
 
-        // allow temporary empty input
+        // allow empty while typing
         if (qty === "") {
           return {
             ...item,
@@ -168,7 +168,22 @@ export const CartProvider = ({ children }) => {
           };
         }
 
-        const quantity = Math.max(1, Math.min(Number(qty), stock));
+        let quantity = Number(qty);
+
+        // invalid number
+        if (isNaN(quantity)) {
+          quantity = 1;
+        }
+
+        // prevent below 1
+        if (quantity < 1) {
+          quantity = 1;
+        }
+
+        // prevent above stock
+        if (quantity > stock) {
+          quantity = stock;
+        }
 
         return {
           ...item,
